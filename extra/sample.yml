@@ -1,0 +1,12 @@
+---
+namespace: gcs
+cluster-size: 3
+nodes:
+    - address: kube1
+      devices: ["/dev/vdc", "/dev/vdd", "/dev/vde"]
+
+    - address: kube2
+      devices: ["/dev/vdc", "/dev/vdd", "/dev/vde"]
+
+    - address: kube3
+      devices: ["/dev/vdc", "/dev/vdd", "/dev/vde"]

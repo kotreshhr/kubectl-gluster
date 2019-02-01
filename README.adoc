@@ -1,0 +1,79 @@
+= GlusterCS Deploy tool
+
+A tool to deploy GlusterCS in a existing Kubernetes cluster.
+
+Install the tool in the Kubernetes master node using,
+
+----
+sudo pip3 install glustercs-deploy
+----
+
+**Note:** Python 2 support is not yet available
+
+== Usage:
+
+----
+glustercsctl deploy <config-yaml>
+----
+
+Example config file,
+
+[source,yaml]
+----
+---
+namespace: gcs
+cluster-size: 3
+nodes:
+    - address: kube1
+      devices: ["/dev/vdc", "/dev/vdd", "/dev/vde"]
+
+    - address: kube2
+      devices: ["/dev/vdc", "/dev/vdd", "/dev/vde"]
+
+    - address: kube3
+      devices: ["/dev/vdc", "/dev/vdd", "/dev/vde"]
+----
+
+Where,
+
+----
+namespace    - Cluster namespace, useful when managing multiple
+                   clusters
+cluster-size - Number of nodes in Gluster cluster. Currently only 3
+                   nodes are supported.
+nodes        - Details of nodes where Gluster server pods needs to be
+                   deployed.
+address      - Address of node as listed in kubectl get nodes(Use
+                   `kubectl get nodes` to get the address)
+devices      - Raw devices which are required to auto provision
+                   Gluster bricks during Volume create
+----
+
+== How it works?
+
+`glustercsctl` does the following tasks based on the provided
+configuration.
+
+1. Generate the Cluster ID.
+2. GCS Namespace setup
+3. Etcd Operator setup and Etcd cluster setup
+4. CSI driver setup
+5. Monitoring Setup
+
+
+== Is this a Operator?
+No. But this tool can be called from an Operator. It is easy! generate
+the config when CRD changes and call this tool from Operator pod.
+
+
+== How is it different from `gcs/deploy`?
+
+This project also uses manifest files from the gcs project, but
+executes Kube commands directly instead of using ansible playbook.
+
+== TODO
+* Currently using `kubectl` command, instead use kubernetes client library.
+* Improve error messages and usability.
+* Use kubernetes watches instead of polling for pods status
+* Python 2 support
+* Support for RPM/Deb packages
