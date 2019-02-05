@@ -201,7 +201,7 @@ def template(config, filename, template_file=None):
                                     template=tmpl_url,
                                     status_code=resp.status_code)
 
-        content = resp.content
+        content = resp.content.decode('utf-8')
     else:
         try:
             with open(tmpl_url) as f:
@@ -216,7 +216,7 @@ def template(config, filename, template_file=None):
                                 template=tmpl_url)
 
     try:
-        Template(content.decode('utf-8')).stream(
+        Template(content).stream(
             **config["template-args"]).dump(dest)
         return
     except IOError as err:
