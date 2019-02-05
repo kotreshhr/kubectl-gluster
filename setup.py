@@ -14,7 +14,7 @@ from setuptools import setup
 
 setup(
     name="glustercsctl",
-    version="0.8",
+    version="0.9",
     packages=["glustercsctl"],
     include_package_data=True,
     install_requires=["jinja2", "PyYAML", "requests"],
