@@ -22,7 +22,8 @@ ManifestEtcdOperator = "gcs-etcd-operator.yml"
 ManifestEtcdCluster = "gcs-etcd-cluster.yml"
 ManifestGd2Services = "gcs-gd2-services.yml"
 ManifestGd2Node = "gcs-gd2.yml"
-ManifestCSI = "gcs-csi.yml"
+ManifestFsCSI = "gcs-fs-csi.yml"
+ManifestVirtBlockCSI = "gcs-virtblock-csi.yml"
 ManifestPromethesOperator = "gcs-prometheus-operator.yml"
 ManifestPrometheusBundle = "gcs-prometheus-bundle.yml"
 ManifestPrometheusKubeStateMetrics = "gcs-prometheus-kube-state-metrics.yml"
@@ -33,6 +34,8 @@ ManifestPrometheusOperatorMetrics = "gcs-prometheus-operator-metrics.yml"
 ManifestGrafanaMixins = "gcs-mixins.yml"
 ManifestGrafanaDashboard = "gcs-grafana.yml"
 ManifestPrometheusAlertManager = "gcs-prometheus-alertmanager-cluster.yml"
+ManifestVirtBlockCSIStorageClass = "gcs-storage-virtblock.yml"
+ManifestStorageSnapshot = "gcs-storage-snapshot.yml"
 
 
 def gcs_namespace_setup(config):
@@ -167,9 +170,9 @@ def glusterd2_setup(config):
             info("Added device", peer=kube_hostname, device=device)
 
 
-def csi_setup(config):
-    template_kube_apply(config, ManifestCSI)
-    info("GlusterCS CSI driver pods created")
+def fs_csi_setup(config):
+    template_kube_apply(config, ManifestFsCSI)
+    info("GlusterCS FS CSI driver pods created")
 
     kubectl_get(
         namespace=config["namespace"],
@@ -179,9 +182,9 @@ def csi_setup(config):
         retries=50,
         delay=10,
         out_expect="1",
-        label="Checking CSI Provisioner state"
+        label="Checking FS CSI Provisioner state"
     )
-    info("CSI provisioner is Ready")
+    info("FS CSI provisioner is Ready")
 
     kubectl_get(
         namespace=config["namespace"],
@@ -191,9 +194,9 @@ def csi_setup(config):
         retries=50,
         delay=10,
         out_expect="1",
-        label="Checking CSI attacher status"
+        label="Checking FS CSI attacher status"
     )
-    info("CSI attacher is Ready")
+    info("FS CSI attacher is Ready")
 
     kubectl_get(
         namespace=config["namespace"],
@@ -205,11 +208,54 @@ def csi_setup(config):
         out_expect="%s" % config["cluster-size"],
         label="Checking CSI node plugins"
     )
-    info("CSI node plugins are Ready")
+    info("FS CSI node plugins are Ready")
 
-    ManifestStorageSnapshot = "gcs-storage-snapshot.yml"
     template_kube_apply(config, ManifestStorageSnapshot)
-    info("Storage and Snapshot class created")
+    info("FS Storage and Snapshot class created")
+
+
+def virtblock_csi_setup(config):
+    template_kube_apply(config, ManifestVirtBlockCSI)
+    info("GlusterCS Virtblock CSI driver pods created")
+
+    kubectl_get(
+        namespace=config["namespace"],
+        jsonpath="status.readyReplicas",
+        gettype="statefulset",
+        name="csi-glustervirtblock-provisioner",
+        retries=50,
+        delay=10,
+        out_expect="1",
+        label="Checking Virtblock CSI Provisioner state"
+    )
+    info("CSI Virtblock provisioner is Ready")
+
+    kubectl_get(
+        namespace=config["namespace"],
+        jsonpath="status.readyReplicas",
+        gettype="statefulset",
+        name="csi-glustervirtblock-attacher",
+        retries=50,
+        delay=10,
+        out_expect="1",
+        label="Checking Virtblock CSI attacher status"
+    )
+    info("CSI Virtblock attacher is Ready")
+
+    kubectl_get(
+        namespace=config["namespace"],
+        jsonpath="status.numberAvailable",
+        gettype="daemonset",
+        name="csi-glustervirtblock-nodeplugin",
+        retries=50,
+        delay=10,
+        out_expect="%s" % config["cluster-size"],
+        label="Checking Virtblock CSI node plugins"
+    )
+    info("Virtblock CSI node plugins are Ready")
+
+    template_kube_apply(config, ManifestVirtBlockCSIStorageClass)
+    info("Virtblock Storage class created")
 
 
 def monitoring_setup(config):
@@ -329,8 +375,11 @@ def deploy(config):
         # Glusterd2 and devices setup
         glusterd2_setup(config)
 
-        # CSI drivers setup
-        csi_setup(config)
+        # FS CSI drivers setup
+        fs_csi_setup(config)
+
+        # Virtblock CSI drivers setup
+        virtblock_csi_setup(config)
 
         # Monitoring setup
         monitoring_setup(config)
