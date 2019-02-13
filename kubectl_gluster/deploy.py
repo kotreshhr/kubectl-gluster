@@ -13,7 +13,7 @@ import tempfile
 import uuid
 import json
 
-from glustercsctl.utils import kubectl_get, template_kube_apply, \
+from kubectl_gluster.utils import kubectl_get, template_kube_apply, \
     GlusterCSException, error, info, kubectl_exec
 
 # Manifest files

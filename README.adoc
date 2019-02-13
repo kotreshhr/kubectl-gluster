@@ -5,7 +5,7 @@ A tool to deploy GlusterCS in a existing Kubernetes cluster.
 Install the tool in the Kubernetes master node using,
 
 ----
-sudo pip3 install glustercsctl
+sudo pip3 install kubectl-gluster
 ----
 
 **Note:** Python 2 support is not yet available
@@ -13,7 +13,7 @@ sudo pip3 install glustercsctl
 == Usage:
 
 ----
-glustercsctl deploy <config-yaml>
+kubectl gluster deploy <config-yaml>
 ----
 
 Example config file,
@@ -51,7 +51,7 @@ devices      - Raw devices which are required to auto provision
 
 == How it works?
 
-`glustercsctl` does the following tasks based on the provided
+`kubectl gluster deploy` does the following tasks based on the provided
 configuration.
 
 1. Generate the Cluster ID.

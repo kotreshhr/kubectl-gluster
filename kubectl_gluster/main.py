@@ -11,8 +11,8 @@
 
 from argparse import ArgumentParser
 
-from glustercsctl.utils import info, warn, error
-from glustercsctl.deploy import deploy
+from kubectl_gluster.utils import info, warn, error
+from kubectl_gluster.deploy import deploy
 
 import yaml
 
