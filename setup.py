@@ -13,14 +13,14 @@ from setuptools import setup
 
 
 setup(
-    name="glustercsctl",
-    version="0.9.1",
-    packages=["glustercsctl"],
+    name="kubectl-gluster",
+    version="0.9.2",
+    packages=["kubectl_gluster"],
     include_package_data=True,
     install_requires=["jinja2", "PyYAML", "requests"],
     entry_points={
         "console_scripts": [
-            "glustercsctl = glustercsctl.main:main"
+            "kubectl-gluster = kubectl_gluster.main:main"
         ]
     },
     platforms="linux",
@@ -30,7 +30,7 @@ setup(
     description="GlusterCS deployment tool",
     license="GPLv2",
     keywords="gluster, container, kubernetes, glustercs",
-    url="https://github.com/aravindavk/glustercsctl",
+    url="https://github.com/aravindavk/kubectl-gluster",
     long_description="""
     GlusterCS deployment tool
     """,

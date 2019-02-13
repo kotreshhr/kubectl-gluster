@@ -1,4 +1,5 @@
 dist
-glustercsctl.egg-info
+kubectl_gluster.egg-info
 *.pyc
 *.pyo
+build
