@@ -5,10 +5,8 @@ A tool to deploy GlusterCS in a existing Kubernetes cluster.
 Install the tool in the Kubernetes master node using,
 
 ----
-sudo pip3 install kubectl-gluster
+sudo pip install kubectl-gluster
 ----
-
-**Note:** Python 2 support is not yet available
 
 == Usage:
 
@@ -20,7 +18,6 @@ Example config file,
 
 [source,yaml]
 ----
----
 namespace: gcs
 cluster-size: 3
 nodes:
@@ -75,5 +72,4 @@ executes Kube commands directly instead of using ansible playbook.
 * Currently using `kubectl` command, instead use kubernetes client library.
 * Improve error messages and usability.
 * Use kubernetes watches instead of polling for pods status
-* Python 2 support
 * Support for RPM/Deb packages
