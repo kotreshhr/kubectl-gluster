@@ -32,8 +32,8 @@ def get_args():
 
 
 def deploy_args_validate(config):
-    # Hard coded to 3 for now
-    if config.get("cluster-size", 0) != defaultClusterSize:
+    # Hard coded to 3 for now, also added 1 to support minikube
+    if config.get("cluster-size", 0) not in [defaultClusterSize, 1]:
         error("Invalid cluster-size.",
               actual=config.get("cluster-size", 0),
               required=defaultClusterSize)
@@ -43,10 +43,10 @@ def deploy_args_validate(config):
         warn("Namespace not specified, using default namespace.",
              name=defaultNamespace)
 
-    if len(config.get("nodes", [])) != defaultClusterSize:
+    if len(config.get("nodes", [])) != config.get("cluster-size", 0):
         error("Invalid number of nodes provided",
               actual=len(config.get("nodes", [])),
-              required=defaultClusterSize)
+              required=config.get("cluster-size", 0))
 
     for idx, node in enumerate(config["nodes"]):
         if not node.get("address", ""):

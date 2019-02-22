@@ -14,6 +14,7 @@ import sys
 import subprocess
 import time
 from datetime import datetime
+from contextlib import contextmanager
 
 import requests
 from jinja2 import Template
@@ -23,7 +24,8 @@ kubectl_cmd = "kubectl"
 
 
 def _msg(prefix, msg, **kwargs):
-    message = "[%7s] %s " % (prefix, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    message = "[%7s] %s " % (prefix,
+                             datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     message += "%s" % msg
     for k, v in kwargs.items():
         if v:
@@ -33,7 +35,12 @@ def _msg(prefix, msg, **kwargs):
 
 
 def info(msg, **kwargs):
-    print(_msg("INFO", msg, **kwargs))
+    msg = _msg("INFO", msg, **kwargs)
+    if kwargs.get("newline", True):
+        msg += "\n"
+
+    sys.stdout.write(msg)
+    sys.stdout.flush()
 
 
 def warn(msg, **kwargs):
@@ -50,7 +57,10 @@ class GlusterCSException(Exception):
         self.kwargs = kwargs
         self.message = message
 
-        super().__init__(message)
+        if sys.version_info >= (3,):
+            super().__init__(message)
+        else:
+            super(GlusterCSException, self).__init__(message)
 
     def __str__(self):
         error(self.message, **self.kwargs)
@@ -70,8 +80,12 @@ def execute(cmd, retries=0, delay=2, out_expect="", out_expect_fn=None,
                          stdout=subprocess.PIPE,
                          shell=shell)
     out, err = p.communicate()
-    out = out.decode("utf-8").strip()
-    err = err.decode("utf-8").strip()
+    if sys.version_info >= (3,):
+        out = out.decode("utf-8").strip()
+        err = err.decode("utf-8").strip()
+    else:
+        out = out.strip()
+        err = err.strip()
 
     cmd_print = cmd if shell else " ".join(cmd)
 
@@ -86,8 +100,8 @@ def execute(cmd, retries=0, delay=2, out_expect="", out_expect_fn=None,
             return out
 
     if retries > 0:
-        warn(label + " - failed", number_retries_left=(retries-1),
-             delay=delay, error=err)
+        sys.stdout.write(".")
+        sys.stdout.flush()
         time.sleep(delay)
         return execute(cmd, retries=(retries-1), delay=delay,
                        out_expect=out_expect, out_expect_fn=out_expect_fn,
@@ -120,7 +134,7 @@ def execute(cmd, retries=0, delay=2, out_expect="", out_expect_fn=None,
 def kubectl_exec(namespace, podname, command, retries=0, delay=2,
                  out_expect="", out_expect_fn=None, label=""):
     if retries > 0 and label:
-        info(label)
+        info(label, newline=False)
 
     cmd = (kubectl_cmd + " exec -it " + podname + " /bin/bash -n" +
            namespace + " -- -c '%s'" % command)
@@ -135,14 +149,14 @@ def kubectl_exec(namespace, podname, command, retries=0, delay=2,
     )
 
     if retries > 0 and label:
-        info(label + " - success")
+        print(".")
 
     return out
 
 
 def kubectl_create(config, filename, retries=0, delay=2, label=""):
     if retries > 0 and label:
-        info(label)
+        info(label, newline=False)
 
     out = execute([
         kubectl_cmd,
@@ -152,7 +166,7 @@ def kubectl_create(config, filename, retries=0, delay=2, label=""):
     ], retries=retries, delay=delay, label=label)
 
     if retries > 0 and label:
-        info(label + " - success")
+        print(".")
 
     return out
 
@@ -160,7 +174,7 @@ def kubectl_create(config, filename, retries=0, delay=2, label=""):
 def kubectl_get(namespace, jsonpath, gettype, name, retries=0, delay=2,
                 out_expect="", out_expect_fn=None, extra_args=[], label=""):
     if retries > 0 and label:
-        info(label)
+        info(label, newline=False)
 
     cmd = [kubectl_cmd]
     if namespace:
@@ -181,7 +195,7 @@ def kubectl_get(namespace, jsonpath, gettype, name, retries=0, delay=2,
                   out_expect_fn=out_expect_fn, label=label)
 
     if retries > 0 and label:
-        info(label + " success")
+        print(".")
 
     return out
 
@@ -201,7 +215,10 @@ def template(config, filename, template_file=None):
                                     template=tmpl_url,
                                     status_code=resp.status_code)
 
-        content = resp.content.decode('utf-8')
+        if sys.version_info >= (3,):
+            content = resp.content.decode('utf-8')
+        else:
+            content = resp.content
     else:
         try:
             with open(tmpl_url) as f:
@@ -229,3 +246,16 @@ def template_kube_apply(config, filename, retries=0, delay=2,
                         template_file=None, label=""):
     template(config, filename, template_file=template_file)
     kubectl_create(config, filename, retries=retries, delay=delay)
+
+
+@contextmanager
+def kubectl_context_run(cmd):
+    cmd = [kubectl_cmd] + cmd
+    p = subprocess.Popen(cmd, stderr=subprocess.PIPE,
+                         stdout=subprocess.PIPE)
+    try:
+        # Give some time to run the given command
+        time.sleep(5)
+        yield p
+    finally:
+        p.terminate()

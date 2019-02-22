@@ -14,7 +14,8 @@ import uuid
 import json
 
 from kubectl_gluster.utils import kubectl_get, template_kube_apply, \
-    GlusterCSException, error, info, kubectl_exec
+    GlusterCSException, error, info, kubectl_exec, \
+    kubectl_context_run, execute
 
 # Manifest files
 ManifestGcsNamespace = "gcs-namespace.yml"
@@ -99,7 +100,28 @@ def etcd_setup(config):
         label="Check for Etcd cluster status"
     )
 
-    info("Etcd cluster is UP")
+    info("Etcd pods are UP")
+
+    def check_etcd_cluster_ready(cmdout):
+        members_data = json.loads(cmdout.strip())
+        return len(members_data.get("members", [])) == 3
+
+    # Etcd port-forward so that status can be checked
+    with kubectl_context_run(
+            ["port-forward",
+             "svc/etcd-client",
+             "31000:2379",
+             "-n%s" % config["namespace"]]):
+
+        execute(
+            ["curl", "http://localhost:31000/v2/members"],
+            out_expect_fn=check_etcd_cluster_ready,
+            retries=50,
+            delay=10,
+            label="Checking etcd cluster ready"
+        )
+
+    info("Etcd cluster is ready")
 
 
 def glusterd2_setup(config):
@@ -117,17 +139,27 @@ def glusterd2_setup(config):
         )
         info("Glusterd2 pod created", address=node["address"])
 
-    gd2_client_endpoint = kubectl_get(
+    def check_num_glusterd2_running(out):
+        # glusterd2 pods + one header line in CLI
+        return len(out.split("\n")) == (len(config["nodes"]) + 1)
+
+    kubectl_get(
         namespace=config["namespace"],
-        jsonpath="spec.clusterIP",
-        gettype="service",
-        name="glusterd2-client",
-        retries=5,
-        delay=5,
-        label="Fetching Glusterd2 Cluster IP"
+        jsonpath="",
+        gettype="pods",
+        name="",
+        extra_args=["-l", "app.kubernetes.io/name=glusterd2",
+                    "--field-selector=status.phase=Running"],
+        out_expect_fn=check_num_glusterd2_running,
+        retries=50,
+        delay=10,
+        label="Check for Glusterd2 pods status"
     )
-    gd2_client_endpoint = "http://%s:24007" % gd2_client_endpoint
-    info("Fetched Glusterd2 ClusterIP", ip=gd2_client_endpoint)
+    info("glusterd2 pods are UP")
+
+    gd2_client_endpoint = "http://gluster-%s-0:24007" % (
+        config["nodes"][0]["address"]
+    )
 
     def check_num_peers(cmdout):
         peers = json.loads(cmdout.strip())
@@ -385,4 +417,5 @@ def deploy(config):
         monitoring_setup(config)
 
     except GlusterCSException as err:
+        print()
         error(err)

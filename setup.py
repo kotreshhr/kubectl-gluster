@@ -14,7 +14,7 @@ from setuptools import setup
 
 setup(
     name="kubectl-gluster",
-    version="0.9.2",
+    version="0.9.4",
     packages=["kubectl_gluster"],
     include_package_data=True,
     install_requires=["jinja2", "PyYAML", "requests"],
@@ -41,6 +41,8 @@ setup(
         "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3 :: Only"
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 2.6",
+        "Programming Language :: Python :: 2.7",
     ],
 )
