@@ -158,7 +158,7 @@ def glusterd2_setup(config):
     info("glusterd2 pods are UP")
 
     gd2_client_endpoint = "http://gluster-%s-0:24007" % (
-        config["nodes"][0]["address"]
+        config["nodes"][0]["address"].split(".")[0]
     )
 
     def check_num_peers(cmdout):
@@ -168,7 +168,7 @@ def glusterd2_setup(config):
     curl_cmd = "curl %s/v1/peers" % gd2_client_endpoint
     peers = kubectl_exec(
         config["namespace"],
-        "gluster-%s-0" % config["nodes"][0]["address"],
+        "gluster-%s-0" % config["nodes"][0]["address"].split(".")[0],
         curl_cmd,
         out_expect_fn=check_num_peers,
         retries=50,
@@ -193,7 +193,7 @@ def glusterd2_setup(config):
             cmd = "glustercli device add %s %s" % (peer["id"], device)
             kubectl_exec(
                 config["namespace"],
-                "gluster-%s-0" % config["nodes"][0]["address"],
+                "gluster-%s-0" % config["nodes"][0]["address"].split(".")[0],
                 cmd,
                 retries=5,
                 delay=5,
