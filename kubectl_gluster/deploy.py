@@ -176,6 +176,24 @@ def glusterd2_setup(config):
         label="Fetching the Gluster Peer info"
     )
 
+    def check_online_peers(cmdout):
+        peers = json.loads(cmdout.strip())
+        for peer in peers:
+            if peer["online"] == False:
+                return False 
+        return True
+
+    curl_cmd = "curl %s/v1/peers" % gd2_client_endpoint
+    peers = kubectl_exec(
+        config["namespace"],
+        "gluster-%s-0" % config["nodes"][0]["address"].split(".")[0],
+        curl_cmd,
+        out_expect_fn=check_online_peers,
+        retries=50,
+        delay=10,
+        label="Waiting for Gluster Peers to be online"
+    )
+
     info("Glusterd2 cluster is ready")
 
     peers_json = json.loads(peers)
@@ -185,7 +203,7 @@ def glusterd2_setup(config):
         config["template-args"]["kube_hostname"] = kube_hostname
         devices = []
         for node in config["nodes"]:
-            if node["address"] == kube_hostname:
+            if node["address"].split(".")[0] == kube_hostname:
                 devices = node["devices"]
                 break
 
