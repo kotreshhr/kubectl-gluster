@@ -32,11 +32,12 @@ def get_args():
 
 
 def deploy_args_validate(config):
-    # Hard coded to 3 for now, also added 1 to support minikube
-    if config.get("cluster-size", 0) not in [defaultClusterSize, 1]:
+    # cluster-size should be atleast 3, but 1 is supported for minikube
+    cluster_size = config.get("cluster-size", 0)
+    if cluster_size <= 0 or cluster_size == 2:
         error("Invalid cluster-size.",
               actual=config.get("cluster-size", 0),
-              required=defaultClusterSize)
+              required=" >=%d" % defaultClusterSize)
 
     if not config.get("namespace", ""):
         config["namespace"] = defaultNamespace
